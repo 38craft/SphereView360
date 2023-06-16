@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">SphereView360</string>
+    <string name="menu_item_select_file">ファイル選択</string>
+</resources>
