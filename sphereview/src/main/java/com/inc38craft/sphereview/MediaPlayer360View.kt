@@ -42,8 +42,8 @@ class MediaPlayer360View(
     }
 
     override fun onSurfaceTextureCreated(surfaceTexture: SurfaceTexture) {
-        mediaPlayer.setSurface(
-            Surface(surfaceTexture)
-        )
+        val surface = Surface(surfaceTexture)
+        mediaPlayer.setSurface(surface)
+        surface.release()
     }
 }

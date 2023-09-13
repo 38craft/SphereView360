@@ -44,5 +44,9 @@ open class SphereView @JvmOverloads constructor(
         return true
     }
 
+    fun rotateCameraAngle(yawDegree: Float, pitchDegree: Float) {
+        renderer.rotateCameraAngle(yawDegree, pitchDegree)
+    }
+
     open fun onSurfaceTextureCreated(surfaceTexture: SurfaceTexture) {}
 }
