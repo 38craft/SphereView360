@@ -9,6 +9,7 @@ import com.inc38craft.sphereview.model.Sphere
 import timber.log.Timber
 import javax.microedition.khronos.egl.EGLConfig
 import javax.microedition.khronos.opengles.GL10
+import kotlin.math.tan
 
 class SphereViewRenderer : Renderer {
 
@@ -28,13 +29,12 @@ class SphereViewRenderer : Renderer {
     private val modelMatrix = FloatArray(4 * 4)
     private val cameraMatrix = FloatArray(4 * 4)
     private val viewMatrix = FloatArray(4 * 4)
+    private var viewAngleDegree = 90.0f
     private val modelViewProjectionMatrix = FloatArray(4 * 4)
     private val surfaceTextureMatrix = FloatArray(4 * 4)
     private var surfaceTextureCreatedCb: ((surfaceTexture: SurfaceTexture) -> Unit)? = null
 
-    // Surface関連
     private var surfaceTexture: SurfaceTexture? = null
-    private var isNewFrameAvailable = false
     var surfaceHeight = 0
     var surfaceWidth = 0
 
@@ -50,17 +50,32 @@ class SphereViewRenderer : Renderer {
         surfaceTextureCreatedCb = callback
     }
 
-    fun rotateCameraAngle(yawDegree: Float, pitchDegree: Float) {
+    fun setViewingAngle(degree: Float) {
+        viewAngleDegree = degree.coerceIn(1.0f, 90.0f)
+        if (surfaceHeight != 0 && surfaceWidth != 0) {
+            val ratio = surfaceWidth.toFloat() / surfaceHeight.toFloat()
+            val near = SPHERE_RADIUS * 0.1f
+            val top = tan(0.5f * Math.toRadians(viewAngleDegree.toDouble()).toFloat()) * near
+            val right = top * ratio
+            Matrix.frustumM(projectionMatrix, 0, -right, right, -top, top, near, SPHERE_RADIUS * 2)
+        }
+    }
+
+    fun resetCameraAngle() {
+        Matrix.setLookAtM(cameraMatrix, 0, 0.0f, 0.0f, -0.1f, 0.0f, 0f, 1.0f, 0f, 1.0f, 0.0f)
+    }
+
+    fun rotateCameraAngle(deltaYawDegree: Float, deltaPitchDegree: Float) {
         val rotationMatrix = FloatArray(4 * 4)
 
         // YawはY軸回転
         Matrix.setIdentityM(rotationMatrix, 0)
-        Matrix.rotateM(rotationMatrix, 0, yawDegree, 0.0f, 1.0f, 0.0f)
+        Matrix.rotateM(rotationMatrix, 0, deltaYawDegree, 0.0f, 1.0f, 0.0f)
         Matrix.multiplyMM(cameraMatrix, 0, cameraMatrix, 0, rotationMatrix, 0)
 
         // PitchはCamera視点のX軸回転
         Matrix.setIdentityM(rotationMatrix, 0)
-        Matrix.rotateM(rotationMatrix, 0, pitchDegree, cameraMatrix[0], 0.0f, -cameraMatrix[2])
+        Matrix.rotateM(rotationMatrix, 0, deltaPitchDegree, cameraMatrix[0], 0.0f, -cameraMatrix[2])
         Matrix.multiplyMM(cameraMatrix, 0, cameraMatrix, 0, rotationMatrix, 0)
     }
 
@@ -137,15 +152,8 @@ class SphereViewRenderer : Renderer {
         GLES20.glBindBuffer(GLES20.GL_ELEMENT_ARRAY_BUFFER, 0)
 
         // SurfaceTextureとSurfaceの作成
-        isNewFrameAvailable = false
         surfaceTexture = SurfaceTexture(textureId).apply {
             surfaceTextureCreatedCb?.invoke(this)
-            setOnFrameAvailableListener {
-                synchronized( this@SphereViewRenderer )
-                {
-                    isNewFrameAvailable = true
-                }
-            }
         }
     }
 
@@ -155,23 +163,17 @@ class SphereViewRenderer : Renderer {
         surfaceWidth = width
         surfaceTexture?.setDefaultBufferSize( width, height )
 
-        val ratio: Float = width.toFloat() / height.toFloat()
-        Matrix.frustumM(projectionMatrix, 0, -ratio, ratio, -1f, 1f, 1.0f, SPHERE_RADIUS)
-
         // SphereはZ軸が緯度になるように作られているので、X軸中心に90度回転してワールド座標系に合わせる
         Matrix.setRotateM(modelMatrix, 0, 90.0f, 1.0f, 0.0f, 0.0f)
-        Matrix.setLookAtM(cameraMatrix, 0, 0.0f, 0.0f, 0.0f, 0.0f, 0f, 1.0f, 0f, 1.0f, 0.0f)
+
+        setViewingAngle(viewAngleDegree)
+        resetCameraAngle()
     }
 
     override fun onDrawFrame(gl: GL10) {
         surfaceTexture?.let { texture ->
-            synchronized( this ) {
-                if(isNewFrameAvailable) {
-                    texture.updateTexImage()
-                    texture.getTransformMatrix(surfaceTextureMatrix)
-                    isNewFrameAvailable = false
-                }
-            }
+            texture.updateTexImage()
+            texture.getTransformMatrix(surfaceTextureMatrix)
         }
 
         Matrix.multiplyMM(viewMatrix, 0, cameraMatrix, 0, modelMatrix, 0)
@@ -338,6 +340,6 @@ class SphereViewRenderer : Renderer {
                     "  gl_FragColor = texture2D(uniformTexture, varyingTexCoord);\n" +
                     "}\n"
 
-        private const val SPHERE_RADIUS = 10.0f
+        private const val SPHERE_RADIUS = 1.0f
     }
 }

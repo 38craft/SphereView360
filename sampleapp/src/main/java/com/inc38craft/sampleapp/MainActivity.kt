@@ -9,6 +9,7 @@ import android.view.MenuItem
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.MenuProvider
+import com.google.android.material.slider.Slider
 import com.inc38craft.sampleapp.databinding.ActivityMainBinding
 import com.wada811.databinding.dataBinding
 
@@ -20,7 +21,7 @@ class MainActivity : AppCompatActivity(R.layout.activity_main) {
             if (it.resultCode == Activity.RESULT_OK) {
                 it.data?.data?.let { uri->
                     kotlin.runCatching {
-                        binding.equirectangularView.playMedia(uri)
+                        binding.playerView.playMedia(uri)
                     }
                 }
             }
@@ -29,6 +30,17 @@ class MainActivity : AppCompatActivity(R.layout.activity_main) {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         initMenu()
+        initSlider()
+    }
+
+    private fun initSlider() {
+        binding.slider.addOnChangeListener(
+            Slider.OnChangeListener { _, value, _ ->
+                val angle = 90 * (1 - value)
+                binding.playerView.setViewingAngle(angle)
+            }
+        )
+        binding.slider.value = 0.2f
     }
 
     private fun initMenu() {
