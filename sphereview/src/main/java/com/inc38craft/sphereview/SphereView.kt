@@ -13,16 +13,21 @@ open class SphereView @JvmOverloads constructor(
 ) : GLSurfaceView(context, attrs) {
     private val renderer = SphereViewRenderer().apply {
         setOnSurfaceTextureCreated {
+            it.setOnFrameAvailableListener {
+                requestRender()
+            }
             onSurfaceTextureCreated(it)
         }
     }
 
+    private var cameraPitchDegree = 0.0f
     private var prevX = 0.0f
     private var prevY = 0.0f
 
     init {
         this.setEGLContextClientVersion(2)
         this.setRenderer(renderer)
+        this.renderMode = RENDERMODE_WHEN_DIRTY
     }
 
     @SuppressLint("ClickableViewAccessibility")
@@ -38,15 +43,31 @@ open class SphereView @JvmOverloads constructor(
                 val deltaY = prevY - event.y
                 prevX = event.x
                 prevY = event.y
-                renderer.rotateCameraAngle(90.0f * deltaX / renderer.surfaceWidth, 90.0f * deltaY / renderer.surfaceHeight)
+                rotateCameraAngle(90.0f * deltaX / renderer.surfaceWidth, 90.0f * deltaY / renderer.surfaceHeight)
             }
         }
         return true
     }
 
-    fun rotateCameraAngle(yawDegree: Float, pitchDegree: Float) {
-        renderer.rotateCameraAngle(yawDegree, pitchDegree)
+    fun setViewingAngle(degree: Float) {
+        renderer.setViewingAngle(degree)
+    }
+
+    fun resetCameraAngle() {
+        cameraPitchDegree = 0.0f
+        renderer.resetCameraAngle()
+    }
+
+    fun rotateCameraAngle(deltaYawDegree: Float, deltaPitchDegree: Float) {
+        // Pitchは上下最大角を超えないようにする
+        val trimmedDeltaPitchDegree =  (cameraPitchDegree + deltaPitchDegree).coerceIn(-MAX_CAMERA_PITCH_DEGREE, MAX_CAMERA_PITCH_DEGREE) - cameraPitchDegree
+        cameraPitchDegree += trimmedDeltaPitchDegree
+        renderer.rotateCameraAngle(deltaYawDegree, trimmedDeltaPitchDegree)
     }
 
     open fun onSurfaceTextureCreated(surfaceTexture: SurfaceTexture) {}
+
+    companion object {
+        const val MAX_CAMERA_PITCH_DEGREE = 70.0f
+    }
 }
