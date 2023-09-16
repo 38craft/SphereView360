@@ -49,8 +49,8 @@ open class SphereView @JvmOverloads constructor(
         return true
     }
 
-    fun setViewingAngle(degree: Float) {
-        renderer.setViewingAngle(degree)
+    fun setFovAngle(degree: Float) {
+        renderer.setFovAngle(degree)
     }
 
     fun resetCameraAngle() {

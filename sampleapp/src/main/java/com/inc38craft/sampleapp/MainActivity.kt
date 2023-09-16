@@ -36,8 +36,8 @@ class MainActivity : AppCompatActivity(R.layout.activity_main) {
     private fun initSlider() {
         binding.slider.addOnChangeListener(
             Slider.OnChangeListener { _, value, _ ->
-                val angle = 90 * (1 - value)
-                binding.playerView.setViewingAngle(angle)
+                val angle = 180 * (1 - value)
+                binding.playerView.setFovAngle(angle)
             }
         )
         binding.slider.value = 0.2f

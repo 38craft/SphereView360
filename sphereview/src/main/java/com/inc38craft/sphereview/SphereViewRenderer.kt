@@ -9,6 +9,10 @@ import com.inc38craft.sphereview.model.Sphere
 import timber.log.Timber
 import javax.microedition.khronos.egl.EGLConfig
 import javax.microedition.khronos.opengles.GL10
+import kotlin.math.asin
+import kotlin.math.atan
+import kotlin.math.cos
+import kotlin.math.sin
 import kotlin.math.tan
 
 class SphereViewRenderer : Renderer {
@@ -29,7 +33,7 @@ class SphereViewRenderer : Renderer {
     private val modelMatrix = FloatArray(4 * 4)
     private val cameraMatrix = FloatArray(4 * 4)
     private val viewMatrix = FloatArray(4 * 4)
-    private var viewAngleDegree = 90.0f
+    private var fovAngleDegree = 90.0f
     private val modelViewProjectionMatrix = FloatArray(4 * 4)
     private val surfaceTextureMatrix = FloatArray(4 * 4)
     private var surfaceTextureCreatedCb: ((surfaceTexture: SurfaceTexture) -> Unit)? = null
@@ -50,19 +54,21 @@ class SphereViewRenderer : Renderer {
         surfaceTextureCreatedCb = callback
     }
 
-    fun setViewingAngle(degree: Float) {
-        viewAngleDegree = degree.coerceIn(1.0f, 90.0f)
+    fun setFovAngle(degree: Float) {
+        fovAngleDegree = degree.coerceIn(10.0f, 170.0f)
         if (surfaceHeight != 0 && surfaceWidth != 0) {
-            val ratio = surfaceWidth.toFloat() / surfaceHeight.toFloat()
-            val near = SPHERE_RADIUS * 0.1f
-            val top = tan(0.5f * Math.toRadians(viewAngleDegree.toDouble()).toFloat()) * near
-            val right = top * ratio
+            val ratio = surfaceHeight.toFloat() / surfaceWidth.toFloat()
+            val near = sin(Math.toRadians((90 - fovAngleDegree / 2).toDouble())).toFloat() * SPHERE_RADIUS
+            val theta = atan(ratio)
+            val r = cos(asin(near)) * SPHERE_RADIUS
+            val top = r * sin(theta)
+            val right = r * cos(theta)
             Matrix.frustumM(projectionMatrix, 0, -right, right, -top, top, near, SPHERE_RADIUS * 2)
         }
     }
 
     fun resetCameraAngle() {
-        Matrix.setLookAtM(cameraMatrix, 0, 0.0f, 0.0f, -0.1f, 0.0f, 0f, 1.0f, 0f, 1.0f, 0.0f)
+        Matrix.setLookAtM(cameraMatrix, 0, 0.0f, 0.0f, 0.0f, 0.0f, 0f, 1.0f, 0f, 1.0f, 0.0f)
     }
 
     fun rotateCameraAngle(deltaYawDegree: Float, deltaPitchDegree: Float) {
@@ -166,7 +172,7 @@ class SphereViewRenderer : Renderer {
         // SphereはZ軸が緯度になるように作られているので、X軸中心に90度回転してワールド座標系に合わせる
         Matrix.setRotateM(modelMatrix, 0, 90.0f, 1.0f, 0.0f, 0.0f)
 
-        setViewingAngle(viewAngleDegree)
+        setFovAngle(fovAngleDegree)
         resetCameraAngle()
     }
 
