@@ -53,6 +53,11 @@ open class SphereView @JvmOverloads constructor(
         renderer.setFovAngle(degree)
     }
 
+    fun setFlip(vertical: Boolean, horizontal: Boolean) {
+        renderer.isHorizontalFlip = horizontal
+        renderer.isVerticalFlip = vertical
+    }
+
     fun resetCameraAngle() {
         cameraPitchDegree = 0.0f
         renderer.resetCameraAngle()
