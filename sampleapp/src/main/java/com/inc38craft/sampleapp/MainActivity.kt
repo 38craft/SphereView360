@@ -9,6 +9,8 @@ import android.view.MenuItem
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.MenuProvider
+import androidx.lifecycle.DefaultLifecycleObserver
+import androidx.lifecycle.LifecycleOwner
 import com.google.android.material.slider.Slider
 import com.inc38craft.sampleapp.databinding.ActivityMainBinding
 import com.wada811.databinding.dataBinding
@@ -29,8 +31,25 @@ class MainActivity : AppCompatActivity(R.layout.activity_main) {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        initPlayerView()
         initMenu()
         initSlider()
+    }
+
+    private fun initPlayerView() {
+        lifecycle.addObserver(
+            object : DefaultLifecycleObserver {
+                override fun onPause(owner: LifecycleOwner) {
+                    super.onPause(owner)
+                    binding.playerView.onPause()
+                }
+
+                override fun onResume(owner: LifecycleOwner) {
+                    super.onResume(owner)
+                    binding.playerView.onResume()
+                }
+            }
+        )
     }
 
     private fun initSlider() {

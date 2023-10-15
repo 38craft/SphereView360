@@ -13,7 +13,6 @@ import kotlin.math.asin
 import kotlin.math.atan
 import kotlin.math.cos
 import kotlin.math.sin
-import kotlin.math.tan
 
 class SphereViewRenderer : Renderer {
 
@@ -25,6 +24,8 @@ class SphereViewRenderer : Renderer {
     private var texCoordAttributeLocation = 0
     private var modelViewProjectionMatrixUniformLocation = 0
     private var surfaceTextureMatrixUniformLocation = 0
+    private var surfaceTextureCoordOriginUniformLocation = 0
+    private var surfaceTextureCoordFlipUniformLocation = 0
     private var textureId = 0
     private var verticesBufferObjectId = 0
     private var indicesBufferObjectId = 0
@@ -36,11 +37,15 @@ class SphereViewRenderer : Renderer {
     private var fovAngleDegree = 90.0f
     private val modelViewProjectionMatrix = FloatArray(4 * 4)
     private val surfaceTextureMatrix = FloatArray(4 * 4)
+    private val surfaceTextureCoordOrigin = FloatArray(2)
+    private val surfaceTextureCoordFlip = FloatArray(2)
     private var surfaceTextureCreatedCb: ((surfaceTexture: SurfaceTexture) -> Unit)? = null
 
     private var surfaceTexture: SurfaceTexture? = null
     var surfaceHeight = 0
     var surfaceWidth = 0
+    var isVerticalFlip = false
+    var isHorizontalFlip = false
 
     init {
         Matrix.setIdentityM(projectionMatrix, 0)
@@ -104,6 +109,12 @@ class SphereViewRenderer : Renderer {
         surfaceTextureMatrixUniformLocation =
             GLES20.glGetUniformLocation(program, "uniformSurfaceTextureMatrix")
         checkGlError("glGetUniformLocation uniformSurfaceTextureMatrix")
+        surfaceTextureCoordOriginUniformLocation =
+            GLES20.glGetUniformLocation(program, "uniformSurfaceTextureCoordOrigin")
+        checkGlError("glGetUniformLocation uniformSurfaceTextureCoordOrigin")
+        surfaceTextureCoordFlipUniformLocation =
+            GLES20.glGetUniformLocation(program, "uniformSurfaceTextureCoordFlip")
+        checkGlError("glGetUniformLocation uniformSurfaceTextureCoordFlip")
 
         // Texture
         val texID = IntArray(1)
@@ -180,6 +191,11 @@ class SphereViewRenderer : Renderer {
         surfaceTexture?.let { texture ->
             texture.updateTexImage()
             texture.getTransformMatrix(surfaceTextureMatrix)
+            surfaceTextureCoordOrigin[0] = if(isHorizontalFlip) 1.0f else 0.0f
+            surfaceTextureCoordOrigin[1] = if(isVerticalFlip) 1.0f else 0.0f
+
+            surfaceTextureCoordFlip[0] = if(isHorizontalFlip) -1.0f else 1.0f
+            surfaceTextureCoordFlip[1] = if(isVerticalFlip) -1.0f else 1.0f
         }
 
         Matrix.multiplyMM(viewMatrix, 0, cameraMatrix, 0, modelMatrix, 0)
@@ -200,12 +216,15 @@ class SphereViewRenderer : Renderer {
         GLES20.glActiveTexture(GLES20.GL_TEXTURE0)
         GLES20.glBindTexture(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, textureId)
 
-        // シェーダープログラムへ行列データの転送
+        // シェーダープログラムへデータの転送
         GLES20.glUniformMatrix4fv(modelViewProjectionMatrixUniformLocation, 1, false, modelViewProjectionMatrix, 0)
         checkGlError("glUniformMatrix4fv MVPMatrix")
-        GLES20.glUniformMatrix4fv(surfaceTextureMatrixUniformLocation, 1, false,
-            this.surfaceTextureMatrix, 0 )
+        GLES20.glUniformMatrix4fv(surfaceTextureMatrixUniformLocation, 1, false, surfaceTextureMatrix, 0 )
         checkGlError("glUniformMatrix4fv STMatrix")
+        GLES20.glUniform2fv(surfaceTextureCoordOriginUniformLocation, 1, surfaceTextureCoordOrigin, 0)
+        checkGlError("glUniform2fv surfaceTextureCoordOrigin")
+        GLES20.glUniform2fv(surfaceTextureCoordFlipUniformLocation, 1, surfaceTextureCoordFlip, 0)
+        checkGlError("glUniform2fv surfaceTextureCoordFlip")
 
         // VBOのバインド
         GLES20.glBindBuffer(GLES20.GL_ARRAY_BUFFER, verticesBufferObjectId)
@@ -341,9 +360,12 @@ class SphereViewRenderer : Renderer {
             "#extension GL_OES_EGL_image_external : require\n" +
                     "precision mediump float;\n" +
                     "varying vec2 varyingTexCoord;\n" +
+                    "uniform vec2 uniformSurfaceTextureCoordOrigin;\n" +
+                    "uniform vec2 uniformSurfaceTextureCoordFlip;\n" +
                     "uniform samplerExternalOES uniformTexture;\n" +
                     "void main() {\n" +
-                    "  gl_FragColor = texture2D(uniformTexture, varyingTexCoord);\n" +
+                    "  vec2 coord = uniformSurfaceTextureCoordOrigin + (varyingTexCoord.st * uniformSurfaceTextureCoordFlip);" +
+                    "  gl_FragColor = texture2D(uniformTexture, coord);\n" +
                     "}\n"
 
         private const val SPHERE_RADIUS = 1.0f
