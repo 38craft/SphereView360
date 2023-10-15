@@ -170,6 +170,7 @@ class SphereViewRenderer : Renderer {
 
         // SurfaceTextureとSurfaceの作成
         surfaceTexture = SurfaceTexture(textureId).apply {
+            setDefaultBufferSize(TEXTURE_BUFFER_WIDTH, TEXTURE_BUFFER_HEIGHT)
             surfaceTextureCreatedCb?.invoke(this)
         }
     }
@@ -178,7 +179,6 @@ class SphereViewRenderer : Renderer {
         gl.glViewport(0, 0, width, height)
         surfaceHeight = height
         surfaceWidth = width
-        surfaceTexture?.setDefaultBufferSize( width, height )
 
         // SphereはZ軸が緯度になるように作られているので、X軸中心に90度回転してワールド座標系に合わせる
         Matrix.setRotateM(modelMatrix, 0, 90.0f, 1.0f, 0.0f, 0.0f)
@@ -369,5 +369,7 @@ class SphereViewRenderer : Renderer {
                     "}\n"
 
         private const val SPHERE_RADIUS = 1.0f
+        private const val TEXTURE_BUFFER_HEIGHT = 960
+        private const val TEXTURE_BUFFER_WIDTH = 1920
     }
 }
