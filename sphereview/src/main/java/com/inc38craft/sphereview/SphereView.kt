@@ -70,6 +70,10 @@ open class SphereView @JvmOverloads constructor(
         renderer.rotateCameraAngle(deltaYawDegree, trimmedDeltaPitchDegree)
     }
 
+    fun changeSurfaceTextureBufferSize(width:Int, height: Int) {
+        renderer.setTextureBufferSize(width, height)
+    }
+
     open fun onSurfaceTextureCreated(surfaceTexture: SurfaceTexture) {}
 
     companion object {
