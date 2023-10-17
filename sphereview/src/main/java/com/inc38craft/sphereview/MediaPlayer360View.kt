@@ -20,6 +20,9 @@ class MediaPlayer360View(
         if (mediaPlayer.isPlaying) {
             mediaPlayer.stop()
         }
+        mediaPlayer.setOnVideoSizeChangedListener { _, width, height ->
+            changeSurfaceTextureBufferSize(width, height)
+        }
         mediaPlayer.reset()
         mediaPlayer.setDataSource(context, uri)
         mediaPlayer.isLooping = true

@@ -7,8 +7,10 @@ import android.opengl.GLSurfaceView.Renderer
 import android.opengl.Matrix
 import com.inc38craft.sphereview.model.Sphere
 import timber.log.Timber
+import java.util.concurrent.locks.ReentrantLock
 import javax.microedition.khronos.egl.EGLConfig
 import javax.microedition.khronos.opengles.GL10
+import kotlin.concurrent.withLock
 import kotlin.math.asin
 import kotlin.math.atan
 import kotlin.math.cos
@@ -42,6 +44,8 @@ class SphereViewRenderer : Renderer {
     private var surfaceTextureCreatedCb: ((surfaceTexture: SurfaceTexture) -> Unit)? = null
 
     private var surfaceTexture: SurfaceTexture? = null
+    private var surfaceTextureLock = ReentrantLock()
+
     var surfaceHeight = 0
     var surfaceWidth = 0
     var isVerticalFlip = false
@@ -57,6 +61,12 @@ class SphereViewRenderer : Renderer {
 
     fun setOnSurfaceTextureCreated(callback: ((surfaceTexture: SurfaceTexture) -> Unit)?) {
         surfaceTextureCreatedCb = callback
+    }
+
+    fun setTextureBufferSize(width: Int, height: Int) {
+        surfaceTextureLock.withLock {
+            surfaceTexture?.setDefaultBufferSize(width, height)
+        }
     }
 
     fun setFovAngle(degree: Float) {
@@ -170,7 +180,7 @@ class SphereViewRenderer : Renderer {
 
         // SurfaceTextureとSurfaceの作成
         surfaceTexture = SurfaceTexture(textureId).apply {
-            setDefaultBufferSize(TEXTURE_BUFFER_WIDTH, TEXTURE_BUFFER_HEIGHT)
+            setDefaultBufferSize(DEFAULT_TEXTURE_BUFFER_WIDTH, DEFAULT_TEXTURE_BUFFER_HEIGHT)
             surfaceTextureCreatedCb?.invoke(this)
         }
     }
@@ -189,8 +199,10 @@ class SphereViewRenderer : Renderer {
 
     override fun onDrawFrame(gl: GL10) {
         surfaceTexture?.let { texture ->
-            texture.updateTexImage()
-            texture.getTransformMatrix(surfaceTextureMatrix)
+            surfaceTextureLock.withLock {
+                texture.updateTexImage()
+                texture.getTransformMatrix(surfaceTextureMatrix)
+            }
             surfaceTextureCoordOrigin[0] = if(isHorizontalFlip) 1.0f else 0.0f
             surfaceTextureCoordOrigin[1] = if(isVerticalFlip) 1.0f else 0.0f
 
@@ -369,7 +381,7 @@ class SphereViewRenderer : Renderer {
                     "}\n"
 
         private const val SPHERE_RADIUS = 1.0f
-        private const val TEXTURE_BUFFER_HEIGHT = 960
-        private const val TEXTURE_BUFFER_WIDTH = 1920
+        private const val DEFAULT_TEXTURE_BUFFER_HEIGHT = 960
+        private const val DEFAULT_TEXTURE_BUFFER_WIDTH = 1920
     }
 }
