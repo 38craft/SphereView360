@@ -6,6 +6,7 @@ import android.media.MediaPlayer
 import android.net.Uri
 import android.util.AttributeSet
 import android.view.Surface
+import timber.log.Timber
 import java.io.IOException
 
 class MediaPlayer360View(
@@ -22,6 +23,15 @@ class MediaPlayer360View(
         }
         mediaPlayer.setOnVideoSizeChangedListener { _, width, height ->
             changeSurfaceTextureBufferSize(width, height)
+        }
+        mediaPlayer.setOnInfoListener { _, what, extra ->
+            Timber.d("MediaPlayer info what=$what extra=$extra")
+            false
+        }
+        mediaPlayer.setOnErrorListener { mp, what, extra ->
+            Timber.e("MediaPlayer error what=$what extra=$extra")
+            mp.reset()
+            false
         }
         mediaPlayer.reset()
         mediaPlayer.setDataSource(context, uri)
