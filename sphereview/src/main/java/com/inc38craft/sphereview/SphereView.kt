@@ -20,7 +20,12 @@ open class SphereView @JvmOverloads constructor(
         }
     }
 
-    private var cameraPitchDegree = 0.0f
+    var cameraPitchDegree = 0.0f
+        private set
+
+    var cameraYawDegree = 0.0f
+        private set
+
     private var prevX = 0.0f
     private var prevY = 0.0f
 
@@ -60,13 +65,20 @@ open class SphereView @JvmOverloads constructor(
 
     fun resetCameraAngle() {
         cameraPitchDegree = 0.0f
+        cameraYawDegree = 0.0f
         renderer.resetCameraAngle()
+    }
+
+    fun setCameraAngle(yawDegree: Float, pitchDegree: Float) {
+        resetCameraAngle()
+        rotateCameraAngle(yawDegree, pitchDegree)
     }
 
     fun rotateCameraAngle(deltaYawDegree: Float, deltaPitchDegree: Float) {
         // Pitchは上下最大角を超えないようにする
         val trimmedDeltaPitchDegree =  (cameraPitchDegree + deltaPitchDegree).coerceIn(-MAX_CAMERA_PITCH_DEGREE, MAX_CAMERA_PITCH_DEGREE) - cameraPitchDegree
         cameraPitchDegree += trimmedDeltaPitchDegree
+        cameraYawDegree += deltaYawDegree
         renderer.rotateCameraAngle(deltaYawDegree, trimmedDeltaPitchDegree)
     }
 
