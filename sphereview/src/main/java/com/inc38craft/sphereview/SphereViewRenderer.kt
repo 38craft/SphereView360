@@ -37,6 +37,8 @@ class SphereViewRenderer : Renderer {
     private val cameraMatrix = FloatArray(4 * 4)
     private val viewMatrix = FloatArray(4 * 4)
     private var fovAngleDegree = 90.0f
+    private var cameraPitchDegree = 0.0f
+    private var cameraYawDegree = 0.0f
     private val modelViewProjectionMatrix = FloatArray(4 * 4)
     private val surfaceTextureMatrix = FloatArray(4 * 4)
     private val surfaceTextureCoordOrigin = FloatArray(2)
@@ -83,12 +85,16 @@ class SphereViewRenderer : Renderer {
     }
 
     fun resetCameraAngle() {
+        cameraPitchDegree = 0.0f
+        cameraYawDegree = 0.0f
         Matrix.setLookAtM(cameraMatrix, 0, 0.0f, 0.0f, 0.0f, 0.0f, 0f, 1.0f, 0f, 1.0f, 0.0f)
     }
 
     fun rotateCameraAngle(deltaYawDegree: Float, deltaPitchDegree: Float) {
-        val rotationMatrix = FloatArray(4 * 4)
+        cameraPitchDegree += deltaPitchDegree
+        cameraYawDegree += deltaYawDegree
 
+        val rotationMatrix = FloatArray(4 * 4)
         // YawはY軸回転
         Matrix.setIdentityM(rotationMatrix, 0)
         Matrix.rotateM(rotationMatrix, 0, deltaYawDegree, 0.0f, 1.0f, 0.0f)
@@ -97,6 +103,22 @@ class SphereViewRenderer : Renderer {
         // PitchはCamera視点のX軸回転
         Matrix.setIdentityM(rotationMatrix, 0)
         Matrix.rotateM(rotationMatrix, 0, deltaPitchDegree, cameraMatrix[0], 0.0f, -cameraMatrix[2])
+        Matrix.multiplyMM(cameraMatrix, 0, cameraMatrix, 0, rotationMatrix, 0)
+    }
+
+    fun setCameraAngle(yawDegree: Float, pitchDegree: Float) {
+        cameraPitchDegree = pitchDegree
+        cameraYawDegree = yawDegree
+        Matrix.setLookAtM(cameraMatrix, 0, 0.0f, 0.0f, 0.0f, 0.0f, 0f, 1.0f, 0f, 1.0f, 0.0f)
+        val rotationMatrix = FloatArray(4 * 4)
+        // YawはY軸回転
+        Matrix.setIdentityM(rotationMatrix, 0)
+        Matrix.rotateM(rotationMatrix, 0, yawDegree, 0.0f, 1.0f, 0.0f)
+        Matrix.multiplyMM(cameraMatrix, 0, cameraMatrix, 0, rotationMatrix, 0)
+
+        // PitchはCamera視点のX軸回転
+        Matrix.setIdentityM(rotationMatrix, 0)
+        Matrix.rotateM(rotationMatrix, 0, pitchDegree, cameraMatrix[0], 0.0f, -cameraMatrix[2])
         Matrix.multiplyMM(cameraMatrix, 0, cameraMatrix, 0, rotationMatrix, 0)
     }
 
@@ -194,7 +216,7 @@ class SphereViewRenderer : Renderer {
         Matrix.setRotateM(modelMatrix, 0, 90.0f, 1.0f, 0.0f, 0.0f)
 
         setFovAngle(fovAngleDegree)
-        resetCameraAngle()
+        setCameraAngle(cameraYawDegree, cameraPitchDegree)
     }
 
     override fun onDrawFrame(gl: GL10) {
