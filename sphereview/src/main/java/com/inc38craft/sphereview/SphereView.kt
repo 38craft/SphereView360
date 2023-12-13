@@ -30,7 +30,7 @@ open class SphereView @JvmOverloads constructor(
     private var prevY = 0.0f
 
     init {
-        this.setEGLContextClientVersion(2)
+        this.setEGLContextClientVersion(3)
         this.setRenderer(renderer)
         this.renderMode = RENDERMODE_WHEN_DIRTY
     }
